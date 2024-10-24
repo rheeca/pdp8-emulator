@@ -65,6 +65,7 @@ int main() {
         // do operation
         switch (inst >> 9) {
             case OP_AND:
+                // AND the operand into AC.
                 if (page == CURRENT)
                     address = getAddrPageCurrent(inst);
                 else
@@ -76,6 +77,7 @@ int main() {
                 break;
 
             case OP_TAD:
+                // ADD the operand to AC.
                 if (page == CURRENT)
                     address = getAddrPageCurrent(inst);
                 else
@@ -90,18 +92,55 @@ int main() {
                 break;
 
             case OP_ISZ:
-                memory[PC] = address + 1;
+                // Increment operand. If zero, SKIP next instruction.
+                if (page == CURRENT)
+                    address = getAddrPageCurrent(inst);
+                else
+                    address = getAddrPageZero(inst);
+
+                PC = (PC + 1) & 07777;
+                if (indirect) address = getIndirectAddress(address);
+
+                inst = memory[address] = ((memory[address] + 1) & 07777);
+                if (inst == 0) PC = (PC + 1) & 07777;
                 break;
 
             case OP_DCA:
-                memory[PC] = AC;
+                // Put accumulator into memory.
+                if (page == CURRENT)
+                    address = getAddrPageCurrent(inst);
+                else
+                    address = getAddrPageZero(inst);
+
+                PC = (PC + 1) & 07777;
+                if (indirect) address = getIndirectAddress(address);
+
+                memory[address] = AC;
                 AC = 0;
                 break;
 
             case OP_JMS:
+                // Store return address then JUMP to subroutine.
+                if (page == CURRENT)
+                    address = getAddrPageCurrent(inst);
+                else
+                    address = getAddrPageZero(inst);
+                if (indirect) address = getIndirectAddress(address);
+
+                address = (address & 07777) | IF;
+                memory[address] = (PC + 1) & 07777;
+                PC = (address + 1) & 07777;
                 break;
 
             case OP_JMP:
+                // JUMP to address.
+                if (page == CURRENT)
+                    address = getAddrPageCurrent(inst);
+                else
+                    address = getAddrPageZero(inst);
+                if (indirect) address = getIndirectAddress(address);
+
+                PC = address & 07777;
                 break;
 
             case OP_IO:
