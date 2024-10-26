@@ -61,7 +61,7 @@ int main() {
         uint16 word = 0;
         for (int j = 3; j >= 0; j--) {
             if ((ch = fgetc(interpreterFile)) == EOF) break;
-            word = word ^ (asciiToOctal(ch) << (j * 3));
+            word = word | (asciiToOctal(ch) << (j * 3));
         }
         memory[i] = word;
         i++;
@@ -211,35 +211,72 @@ int main() {
                 // Microcoded operations
                 if (I == 0) {  // Group 1
                     PC = (PC + 1) & 07777;
-                    uint16 CLA = (inst >> 7) & 01;
-                    uint16 CLL = (inst >> 6) & 01;
-                    uint16 CMA = (inst >> 5) & 01;
-                    uint16 CML = (inst >> 4) & 01;
-                    uint16 IAC = inst & 01;
-                    uint16 RAR = (inst >> 3) & 01;
-                    uint16 RAL = (inst >> 2) & 01;
-                    uint16 BSW = (inst >> 1) & 01;
 
-                    if (CLA) AC = 00000;
-                    if (CLL) LK = 000000;
-                    if (CMA) AC = AC ^ 007777;
-                    if (CML) LK = LK ^ 010000;
-                    if (IAC) {
+                    // CLA CLL
+                    switch ((inst >> 6) & 00003) {
+                        case 01:  // CLL
+                            LK = 000000;
+                            break;
+                        case 02:  // CLA
+                            AC = 00000;
+                            break;
+                        case 03:  // CLA CLL
+                            AC = 00000;
+                            LK = 000000;
+                            break;
+                    }
+
+                    // CMA CML
+                    switch ((inst >> 4) & 00003) {
+                        case 01:  // CML
+                            LK = LK ^ 010000;
+                            break;
+                        case 02:  // CMA
+                            AC = AC ^ 007777;
+                            break;
+                        case 03:  // CMA CML
+                            AC = AC ^ 007777;
+                            LK = LK ^ 010000;
+                            break;
+                    }
+
+                    // IAC
+                    if (inst & 00001) {
                         AC = (AC | LK) + 1;
                         LK = AC & 010000;
                         AC = AC & 007777;
                     }
-                    if (RAR) {
-                        AC = ((AC | LK) >> 1) | (AC << 12);
-                        LK = AC & 010000;
-                        AC = AC & 007777;
-                    }
-                    if (RAL) {
-                        AC = (AC << 1) | (LK >> 12);
-                        LK = AC & 010000;
-                        AC = AC & 007777;
-                    }
 
+                    // RAR RAL BSW
+                    switch ((inst >> 1) & 00007) {
+                        case 01:  // BSW
+                            AC = ((AC & 00077) << 6) | ((AC & 07700) >> 6);
+                            break;
+                        case 02:  // RAL
+                            AC = (AC << 1) | (LK >> 12);
+                            LK = AC & 010000;
+                            AC = AC & 007777;
+                            break;
+                        case 03:  // RTL (RAL BSW)
+                            AC = (AC << 2) | ((LK | AC) >> 11);
+                            LK = AC & 010000;
+                            AC = AC & 007777;
+                            break;
+                        case 04:  // RAR
+                            AC = ((AC | LK) >> 1) | (AC << 12);
+                            LK = AC & 010000;
+                            AC = AC & 007777;
+                            break;
+                        case 05:  // RTR (RAR BSW)
+                            AC = ((AC | LK) >> 2) | (AC << 11);
+                            LK = AC & 010000;
+                            AC = AC & 007777;
+                            break;
+                        case 06:  // RAR RAL
+                            break;
+                        case 07:  // RAR RAL BSW
+                            break;
+                    }
                 } else {
                     if ((inst & 00001) == 0) {             // Group 2
                         if (((inst >> 3) & 00010) == 0) {  // Or Group
