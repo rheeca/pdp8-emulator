@@ -208,10 +208,10 @@ int main() {
                 break;
 
             case OP_MICRO:
+                PC = (PC + 1) & 07777;
+
                 // Microcoded operations
                 if (I == 0) {  // Group 1
-                    PC = (PC + 1) & 07777;
-
                     // CLA CLL
                     switch ((inst >> 6) & 00003) {
                         case 01:  // CLL
@@ -278,12 +278,102 @@ int main() {
                             break;
                     }
                 } else {
-                    if ((inst & 00001) == 0) {             // Group 2
-                        if (((inst >> 3) & 00010) == 0) {  // Or Group
+                    switch (inst & 00011) {
+                        case 000:  // Group 2, Or group
+                            // SMA SZA SNL
+                            switch ((inst >> 4) & 00007) {
+                                case 01:  // SNL
+                                    if (LK) {
+                                        PC = (PC + 1) & 07777;
+                                    }
+                                    break;
+                                case 02:  // SZA
+                                    if (AC == 0) {
+                                        PC = (PC + 1) & 07777;
+                                    }
+                                    break;
+                                case 03:  // SZA SNL
+                                    if (AC == 0 || LK) {
+                                        PC = (PC + 1) & 07777;
+                                    }
+                                    break;
+                                case 04:  // SMA
+                                    // If negative (sign bit is 1)
+                                    if (AC & 04000) {
+                                        PC = (PC + 1) & 07777;
+                                    }
+                                    break;
+                                case 05:  // SMA SNL
+                                    if (AC & 04000 || LK) {
+                                        PC = (PC + 1) & 07777;
+                                    }
+                                    break;
+                                case 06:  // SMA SZA
+                                    if (AC & 04000 || AC == 0) {
+                                        PC = (PC + 1) & 07777;
+                                    }
+                                    break;
+                                case 07:  // SMA SZA SNL
+                                    if (AC & 04000 || AC == 0 || LK) {
+                                        PC = (PC + 1) & 07777;
+                                    }
+                                    break;
+                            }
 
-                        } else {  // And Group
-                        }
-                    } else {  // Group 3
+                            // CLA
+                            if ((inst >> 7) & 00001) AC = 00000;
+
+                            break;
+
+                        case 010:  // Group 2, And group
+                            // SPA SNA SZL
+                            switch ((inst >> 4) & 00007) {
+                                case 01:  // SZL
+                                    if (LK == 0) {
+                                        PC = (PC + 1) & 07777;
+                                    }
+                                    break;
+                                case 02:  // SNA
+                                    if (AC) {
+                                        PC = (PC + 1) & 07777;
+                                    }
+                                    break;
+                                case 03:  // SNA SZL
+                                    if (AC && LK == 0) {
+                                        PC = (PC + 1) & 07777;
+                                    }
+                                    break;
+                                case 04:  // SPA
+                                    // If positive (sign bit is 0)
+                                    if ((AC & 04000) == 0) {
+                                        PC = (PC + 1) & 07777;
+                                    }
+                                    break;
+                                case 05:  // SPA SZL
+                                    if ((AC & 04000) == 0 && LK == 0) {
+                                        PC = (PC + 1) & 07777;
+                                    }
+                                    break;
+                                case 06:  // SPA SNA
+                                    if ((AC & 04000) == 0 && AC) {
+                                        PC = (PC + 1) & 07777;
+                                    }
+                                    break;
+                                case 07:  // SPA SNA SZL
+                                    if ((AC & 04000) == 0 && AC && LK == 0) {
+                                        PC = (PC + 1) & 07777;
+                                    }
+                                    break;
+                            }
+
+                            // CLA
+                            if ((inst >> 7) & 00001) AC = 00000;
+
+                            break;
+
+                        case 001:  // Group 3
+                        case 011:
+                            break;
                     }
                 }
                 break;
