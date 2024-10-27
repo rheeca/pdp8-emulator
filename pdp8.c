@@ -43,12 +43,14 @@ unsigned char I;     // I bit
 unsigned char page;  // Z bit
 
 unsigned char input;
-int isDebug = 1;
+int isDebug = 0;
 
 uint16 getAddrPageZero(uint16 inst);
 uint16 getAddrPageCurrent(uint16 inst);
 uint16 getIndirectAddress(uint16 address);
 uint16 asciiToOctal(char c);
+void readCharacter();
+void printCharacter();
 
 int main() {
     FILE *interpreterFile;
@@ -56,7 +58,7 @@ int main() {
 
     // load interpreter into memory
     char ch;
-    int i = 0200;  // start at address 0200 (skip page 0)
+    int i = 0;
     while (ch != EOF) {
         uint16 word = 0;
         for (int j = 3; j >= 0; j--) {
@@ -67,11 +69,14 @@ int main() {
         i++;
     }
 
-    PC = 0200;
+    PC = 0200;  // start at address 0200 (skip page 0)
     while (1) {
         // fetch instruction from memory
         address = PC | IF;
         inst = memory[address];
+
+        if (isDebug)
+            printf("PC: %o, AC: %o, LK: %o; INST: %o\n", PC, AC, LK, inst);
 
         // decode instruction
         I = (inst >> 8) & 01;
@@ -81,6 +86,7 @@ int main() {
         switch (inst >> 9) {
             case OP_AND:
                 // AND the operand into AC.
+                if (isDebug) printf("OP_AND\n");
                 if (page == CURRENT)
                     address = getAddrPageCurrent(inst);
                 else
@@ -93,6 +99,7 @@ int main() {
 
             case OP_TAD:
                 // ADD the operand to AC.
+                if (isDebug) printf("OP_TAD\n");
                 if (page == CURRENT)
                     address = getAddrPageCurrent(inst);
                 else
@@ -108,6 +115,7 @@ int main() {
 
             case OP_ISZ:
                 // Increment operand. If zero, SKIP next instruction.
+                if (isDebug) printf("OP_ISZ\n");
                 if (page == CURRENT)
                     address = getAddrPageCurrent(inst);
                 else
@@ -122,6 +130,7 @@ int main() {
 
             case OP_DCA:
                 // Put accumulator into memory.
+                if (isDebug) printf("OP_DCA\n");
                 if (page == CURRENT)
                     address = getAddrPageCurrent(inst);
                 else
@@ -136,6 +145,7 @@ int main() {
 
             case OP_JMS:
                 // Store return address then JUMP to subroutine.
+                if (isDebug) printf("OP_JMS\n");
                 if (page == CURRENT)
                     address = getAddrPageCurrent(inst);
                 else
@@ -149,6 +159,7 @@ int main() {
 
             case OP_JMP:
                 // JUMP to address.
+                if (isDebug) printf("OP_JMP\n");
                 if (page == CURRENT)
                     address = getAddrPageCurrent(inst);
                 else
@@ -159,10 +170,14 @@ int main() {
                 break;
 
             case OP_IO:  // Input/Output Transfer
+                if (isDebug) printf("OP_IO\n");
                 PC = (PC + 1) & 07777;
                 switch ((inst >> 3) & 077) {
                     case 003:  // Console keyboard input
                         switch (inst & 07) {
+                            case 00:  // KCF
+                                keyboardFlag = 0;
+                                break;
                             case 01:  // KSF
                                 // Skip next instruction if I/O device is ready
                                 if (keyboardFlag) {
@@ -171,7 +186,8 @@ int main() {
                                 break;
                             case 02:  // KCC
                                 keyboardFlag = 0;
-                                AC = 00000;
+                                AC = 0;
+                                readCharacter();
                                 break;
                             case 04:  // KRS
                                 AC = AC | keyboardBuffer;
@@ -179,12 +195,17 @@ int main() {
                             case 06:  // KIE
                                 keyboardFlag = 0;
                                 AC = keyboardBuffer;
-                                // read input?
+                                readCharacter();
                                 break;
                         }
                         break;
                     case 004:  // Console keyboard output
                         switch (inst & 07) {
+                            case 00:  // TFL
+                                if (printerFlag == 0) {
+                                    printerFlag = 1;
+                                }
+                                break;
                             case 01:  // TSF
                                 if (printerFlag) {
                                     PC = (PC + 1) & 07777;
@@ -195,12 +216,12 @@ int main() {
                                 break;
                             case 04:  // TPC
                                 printerBuffer = AC & 00377;
-                                // initiate output?
+                                printCharacter();
                                 break;
                             case 06:  // TLS
                                 printerFlag = 0;
                                 printerBuffer = AC & 00377;
-                                // initiate output?
+                                printCharacter();
                                 break;
                         }
                         break;
@@ -208,6 +229,7 @@ int main() {
                 break;
 
             case OP_MICRO:
+                if (isDebug) printf("OP_MICRO\n");
                 PC = (PC + 1) & 07777;
 
                 // Microcoded operations
@@ -402,4 +424,16 @@ uint16 getIndirectAddress(uint16 address) {
 uint16 asciiToOctal(char c) {
     uint16 ascii = (int)c;
     return ascii - 48;
+}
+
+void readCharacter() {
+    unsigned char input;
+    scanf("%c", &input);
+    keyboardBuffer = input;
+}
+
+void printCharacter() {
+    unsigned char ch = printerBuffer & 0177;
+    printf("%c", ch);
+    printerFlag = 1;
 }
