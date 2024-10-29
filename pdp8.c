@@ -42,7 +42,6 @@ uint16 inst;         // instruction from memory
 unsigned char I;     // I bit
 unsigned char page;  // Z bit
 
-unsigned char input;
 int isDebug = 0;
 
 uint16 getAddrPageZero(uint16 inst);
@@ -51,6 +50,7 @@ uint16 getIndirectAddress(uint16 address);
 uint16 asciiToOctal(char c);
 void readCharacter();
 void printCharacter();
+void printDebug();
 
 int main() {
     FILE *interpreterFile;
@@ -75,8 +75,7 @@ int main() {
         address = PC | IF;
         inst = memory[address];
 
-        if (isDebug)
-            printf("PC: %o, AC: %o, LK: %o; INST: %o\n", PC, AC, LK, inst);
+        if (isDebug) printDebug();
 
         // decode instruction
         I = (inst >> 8) & 01;
@@ -86,7 +85,6 @@ int main() {
         switch (inst >> 9) {
             case OP_AND:
                 // AND the operand into AC.
-                if (isDebug) printf("OP_AND\n");
                 if (page == CURRENT)
                     address = getAddrPageCurrent(inst);
                 else
@@ -99,7 +97,6 @@ int main() {
 
             case OP_TAD:
                 // ADD the operand to AC.
-                if (isDebug) printf("OP_TAD\n");
                 if (page == CURRENT)
                     address = getAddrPageCurrent(inst);
                 else
@@ -115,7 +112,6 @@ int main() {
 
             case OP_ISZ:
                 // Increment operand. If zero, SKIP next instruction.
-                if (isDebug) printf("OP_ISZ\n");
                 if (page == CURRENT)
                     address = getAddrPageCurrent(inst);
                 else
@@ -130,7 +126,6 @@ int main() {
 
             case OP_DCA:
                 // Put accumulator into memory.
-                if (isDebug) printf("OP_DCA\n");
                 if (page == CURRENT)
                     address = getAddrPageCurrent(inst);
                 else
@@ -145,7 +140,6 @@ int main() {
 
             case OP_JMS:
                 // Store return address then JUMP to subroutine.
-                if (isDebug) printf("OP_JMS\n");
                 if (page == CURRENT)
                     address = getAddrPageCurrent(inst);
                 else
@@ -159,7 +153,6 @@ int main() {
 
             case OP_JMP:
                 // JUMP to address.
-                if (isDebug) printf("OP_JMP\n");
                 if (page == CURRENT)
                     address = getAddrPageCurrent(inst);
                 else
@@ -170,7 +163,6 @@ int main() {
                 break;
 
             case OP_IO:  // Input/Output Transfer
-                if (isDebug) printf("OP_IO\n");
                 PC = (PC + 1) & 07777;
                 switch ((inst >> 3) & 077) {
                     case 003:  // Console keyboard input
@@ -192,7 +184,7 @@ int main() {
                             case 04:  // KRS
                                 AC = AC | keyboardBuffer;
                                 break;
-                            case 06:  // KIE
+                            case 06:  // KRB
                                 keyboardFlag = 0;
                                 AC = keyboardBuffer;
                                 readCharacter();
@@ -229,7 +221,6 @@ int main() {
                 break;
 
             case OP_MICRO:
-                if (isDebug) printf("OP_MICRO\n");
                 PC = (PC + 1) & 07777;
 
                 // Microcoded operations
@@ -430,10 +421,45 @@ void readCharacter() {
     unsigned char input;
     scanf("%c", &input);
     keyboardBuffer = input;
+    keyboardFlag = 1;
 }
 
 void printCharacter() {
     unsigned char ch = printerBuffer & 0177;
     printf("%c", ch);
     printerFlag = 1;
+}
+
+void printDebug() {
+    char *op;
+    unsigned char I_str = I ? 'I' : 'D';
+    unsigned char page_str = page ? 'C' : 'Z';
+    switch (inst >> 9) {
+        case OP_AND:
+            op = "OP_AND";
+            break;
+        case OP_TAD:
+            op = "OP_TAD";
+            break;
+        case OP_ISZ:
+            op = "OP_ISZ";
+            break;
+        case OP_DCA:
+            op = "OP_DCA";
+            break;
+        case OP_JMS:
+            op = "OP_JMS";
+            break;
+        case OP_JMP:
+            op = "OP_JMP";
+            break;
+        case OP_IO:
+            op = "OP_IO";
+            break;
+        case OP_MICRO:
+            op = "OP_MICRO";
+            break;
+    }
+    printf("PC: %o, AC: %o, LK: %o; INST: %o (%s %c %c)\n", PC, AC, LK, inst,
+           op, I_str, page_str);
 }
