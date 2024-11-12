@@ -51,10 +51,11 @@ uint16 asciiToOctal(char c);
 void readCharacter();
 void printCharacter();
 void printDebug();
+void printDebugMicro();
 
 int main() {
     FILE *interpreterFile;
-    interpreterFile = fopen("focal.dump.bn.ascii", "r");
+    interpreterFile = fopen("focal.dump.nointerrupts.raw", "r");
 
     // load interpreter into memory
     char ch;
@@ -75,11 +76,14 @@ int main() {
         address = PC | IF;
         inst = memory[address];
 
-        if (isDebug) printDebug();
-
         // decode instruction
-        I = (inst >> 8) & 01;
-        page = (inst >> 7) & 01;
+        I = (inst >> 8) & 00001;
+        page = (inst >> 7) & 00001;
+
+        if (isDebug) {
+            printDebug();
+            printDebugMicro();
+        }
 
         // do operation
         switch (inst >> 9) {
@@ -120,8 +124,8 @@ int main() {
                 PC = (PC + 1) & 07777;
                 if (I == INDIRECT) address = getIndirectAddress(address);
 
-                inst = memory[address] = ((memory[address] + 1) & 07777);
-                if (inst == 0) PC = (PC + 1) & 07777;
+                uint16 buf = memory[address] = ((memory[address] + 1) & 07777);
+                if (buf == 0) PC = (PC + 1) & 07777;
                 break;
 
             case OP_DCA:
@@ -171,10 +175,9 @@ int main() {
                                 keyboardFlag = 0;
                                 break;
                             case 01:  // KSF
-                                // Skip next instruction if I/O device is ready
-                                if (keyboardFlag) {
-                                    PC = (PC + 1) & 07777;
-                                }
+                                // Always skip next instruction because scanf in
+                                // C already waits for keyboard input
+                                PC = (PC + 1) & 07777;
                                 break;
                             case 02:  // KCC
                                 keyboardFlag = 0;
@@ -403,10 +406,14 @@ uint16 getAddrPageCurrent(uint16 inst) {
 uint16 getIndirectAddress(uint16 address) {
     if ((address & 07770) == 00010) {  // address 010 to 017
         // autoindexed addressing
+        if (isDebug)
+            printf("Autoindex: memory[%o] // %o\n", address, memory[address]);
         memory[address] = (memory[address] + 1) & 07777;
         address = memory[address] | DF;
     } else {
         // immediate addressing
+        if (isDebug)
+            printf("Immediate: memory[%o] // %o\n", address, memory[address]);
         address = (memory[address]) | DF;
     }
     return address;
@@ -462,4 +469,135 @@ void printDebug() {
     }
     printf("PC: %o, AC: %o, LK: %o; INST: %o (%s %c %c)\n", PC, AC, LK, inst,
            op, I_str, page_str);
+}
+
+void printDebugMicro() {
+    if (inst >> 9 != OP_MICRO) return;
+    if (I == 0) {  // Group 1
+        // CLA CLL
+        switch ((inst >> 6) & 00003) {
+            case 01:  // CLL
+                printf("Group 1: CLL\n");
+                break;
+            case 02:  // CLA
+                printf("Group 1: CLA\n");
+                break;
+            case 03:  // CLA CLL
+                printf("Group 1: CLA CLL\n");
+                break;
+        }
+
+        // CMA CML
+        switch ((inst >> 4) & 00003) {
+            case 01:  // CML
+                printf("Group 1: CML\n");
+                break;
+            case 02:  // CMA
+                printf("Group 1: CMA\n");
+                break;
+            case 03:  // CMA CML
+                printf("Group 1: CMA CML\n");
+                break;
+        }
+
+        // IAC
+        if (inst & 00001) {
+            printf("Group 1: IAC\n");
+        }
+
+        // RAR RAL BSW
+        switch ((inst >> 1) & 00007) {
+            case 01:  // BSW
+                printf("Group 1: BSW\n");
+                break;
+            case 02:  // RAL
+                printf("Group 1: RAL\n");
+                break;
+            case 03:  // RTL (RAL BSW)
+                printf("Group 1: RTL (RAL BSW)\n");
+                break;
+            case 04:  // RAR
+                printf("Group 1: RAR\n");
+                break;
+            case 05:  // RTR (RAR BSW)
+                printf("Group 1: RTR (RAR BSW)\n");
+                break;
+            case 06:  // RAR RAL
+                printf("Group 1: RAR RAL\n");
+                break;
+            case 07:  // RAR RAL BSW
+                printf("Group 1: RAR RAL BSW\n");
+                break;
+        }
+    } else {
+        switch (inst & 00011) {
+            case 000:  // Group 2, Or group
+                // SMA SZA SNL
+                switch ((inst >> 4) & 00007) {
+                    case 01:  // SNL
+                        printf("Group 2 Or: SNL\n");
+                        break;
+                    case 02:  // SZA
+                        printf("Group 2 Or: SZA\n");
+                        break;
+                    case 03:  // SZA SNL
+                        printf("Group 2 Or: SZA SNL\n");
+                        break;
+                    case 04:  // SMA
+                        // If negative (sign bit is 1)
+                        printf("Group 2 Or: SMA\n");
+                        break;
+                    case 05:  // SMA SNL
+                        printf("Group 2 Or: SMA SNL\n");
+                        break;
+                    case 06:  // SMA SZA
+                        printf("Group 2 Or: SMA SZA\n");
+                        break;
+                    case 07:  // SMA SZA SNL
+                        printf("Group 2 Or: SMA SZA SNL\n");
+                        break;
+                }
+
+                // CLA
+                if ((inst >> 7) & 00001) printf("Group 2 Or: CLA\n");
+
+                break;
+
+            case 010:  // Group 2, And group
+                // SPA SNA SZL
+                switch ((inst >> 4) & 00007) {
+                    case 01:  // SZL
+                        printf("Group 2 And: SZL\n");
+                        break;
+                    case 02:  // SNA
+                        printf("Group 2 And: SNA\n");
+                        break;
+                    case 03:  // SNA SZL
+                        printf("Group 2 And: SNA SZL\n");
+                        break;
+                    case 04:  // SPA
+                        // If positive (sign bit is 0)
+                        printf("Group 2 And: SPA\n");
+                        break;
+                    case 05:  // SPA SZL
+                        printf("Group 2 And: SPA SZL\n");
+                        break;
+                    case 06:  // SPA SNA
+                        printf("Group 2 And: SPA SNA\n");
+                        break;
+                    case 07:  // SPA SNA SZL
+                        printf("Group 2 And: SPA SNA SZL\n");
+                        break;
+                }
+
+                // CLA
+                if ((inst >> 7) & 00001) printf("Group 2 And: CLA\n");
+
+                break;
+
+            case 001:  // Group 3
+            case 011:
+                break;
+        }
+    }
 }
