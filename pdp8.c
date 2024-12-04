@@ -34,8 +34,8 @@ uint16 PC = 0;  // program counter; 12 bits
 
 // These registers are shifted by 12 bits to the left
 uint16 LK = 0;  // link bit; 1 bit
-uint16 IF = 0;  // instruction field register; 3 bits
-uint16 DF = 0;  // data field register; 3 bits
+// uint16 IF = 0;  // instruction field register; 3 bits
+// uint16 DF = 0;  // data field register; 3 bits
 
 uint16 address;      // memory address
 uint16 inst;         // instruction from memory
@@ -73,7 +73,7 @@ int main() {
     PC = 0200;  // start at address 0200 (skip page 0)
     while (1) {
         // fetch instruction from memory
-        address = PC | IF;
+        address = PC;
         inst = memory[address];
 
         // decode instruction
@@ -150,7 +150,7 @@ int main() {
                     address = getAddrPageZero(inst);
                 if (I == INDIRECT) address = getIndirectAddress(address);
 
-                address = (address & 07777) | IF;
+                address = (address & 07777);
                 memory[address] = (PC + 1) & 07777;
                 PC = (address + 1) & 07777;
                 break;
@@ -366,17 +366,17 @@ int main() {
                                     }
                                     break;
                                 case 05:  // SPA SZL
-                                    if ((AC & 04000) == 0 && LK == 0) {
+                                    if ((AC & 04000) == 0 || LK == 0) {
                                         PC = (PC + 1) & 07777;
                                     }
                                     break;
                                 case 06:  // SPA SNA
-                                    if ((AC & 04000) == 0 && AC) {
+                                    if ((AC & 04000) == 0 || AC) {
                                         PC = (PC + 1) & 07777;
                                     }
                                     break;
                                 case 07:  // SPA SNA SZL
-                                    if ((AC & 04000) == 0 && AC && LK == 0) {
+                                    if ((AC & 04000) == 0 || AC || LK == 0) {
                                         PC = (PC + 1) & 07777;
                                     }
                                     break;
@@ -397,10 +397,10 @@ int main() {
     }
 }
 
-uint16 getAddrPageZero(uint16 inst) { return ((inst & 0177) | IF); }
+uint16 getAddrPageZero(uint16 inst) { return ((inst & 0177)); }
 
 uint16 getAddrPageCurrent(uint16 inst) {
-    return ((inst & 0177) | (PC & 07600) | IF);
+    return ((inst & 0177) | (PC & 07600));
 }
 
 uint16 getIndirectAddress(uint16 address) {
@@ -409,12 +409,12 @@ uint16 getIndirectAddress(uint16 address) {
         if (isDebug)
             printf("Autoindex: memory[%o] // %o\n", address, memory[address]);
         memory[address] = (memory[address] + 1) & 07777;
-        address = memory[address] | DF;
+        address = memory[address];
     } else {
         // immediate addressing
         if (isDebug)
             printf("Immediate: memory[%o] // %o\n", address, memory[address]);
-        address = (memory[address]) | DF;
+        address = (memory[address]);
     }
     return address;
 }
