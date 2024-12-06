@@ -344,6 +344,9 @@ int main() {
                         case 010:  // Group 2, And group
                             // SPA SNA SZL
                             switch ((inst >> 4) & 00007) {
+                                case 00:
+                                    PC = (PC + 1) & 07777;
+                                    break;
                                 case 01:  // SZL
                                     if (LK == 0) {
                                         PC = (PC + 1) & 07777;
@@ -366,17 +369,17 @@ int main() {
                                     }
                                     break;
                                 case 05:  // SPA SZL
-                                    if ((AC & 04000) == 0 || LK == 0) {
+                                    if ((AC & 04000) == 0 && LK == 0) {
                                         PC = (PC + 1) & 07777;
                                     }
                                     break;
                                 case 06:  // SPA SNA
-                                    if ((AC & 04000) == 0 || AC) {
+                                    if ((AC & 04000) == 0 && AC) {
                                         PC = (PC + 1) & 07777;
                                     }
                                     break;
                                 case 07:  // SPA SNA SZL
-                                    if ((AC & 04000) == 0 || AC || LK == 0) {
+                                    if ((AC & 04000) == 0 && AC && LK == 0) {
                                         PC = (PC + 1) & 07777;
                                     }
                                     break;
