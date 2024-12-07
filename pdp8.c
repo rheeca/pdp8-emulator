@@ -32,10 +32,7 @@ uint16 memory[MEMSIZE];
 uint16 AC = 0;  // accumulator; 12 bits
 uint16 PC = 0;  // program counter; 12 bits
 
-// These registers are shifted by 12 bits to the left
-uint16 LK = 0;  // link bit; 1 bit
-// uint16 IF = 0;  // instruction field register; 3 bits
-// uint16 DF = 0;  // data field register; 3 bits
+uint16 LK = 0;  // link bit; 1 bit shifted 12 bits to the left
 
 uint16 address;      // memory address
 uint16 inst;         // instruction from memory
@@ -86,7 +83,7 @@ int main() {
         }
 
         // do operation
-        switch (inst >> 9) {
+        switch ((inst >> 9) & 07) {
             case OP_AND:
                 // AND the operand into AC.
                 if (page == CURRENT)
@@ -265,6 +262,8 @@ int main() {
 
                     // RAR RAL BSW
                     switch ((inst >> 1) & 00007) {
+                        case 00:  // nop
+                            break;
                         case 01:  // BSW
                             AC = ((AC & 00077) << 6) | ((AC & 07700) >> 6);
                             break;
@@ -289,6 +288,7 @@ int main() {
                             AC = AC & 007777;
                             break;
                         case 06:  // RAR RAL
+                            AC = AC & inst;
                             break;
                         case 07:  // RAR RAL BSW
                             break;
@@ -298,6 +298,8 @@ int main() {
                         case 000:  // Group 2, Or group
                             // SMA SZA SNL
                             switch ((inst >> 4) & 00007) {
+                                case 00:  // nop
+                                    break;
                                 case 01:  // SNL
                                     if (LK) {
                                         PC = (PC + 1) & 07777;
@@ -320,17 +322,17 @@ int main() {
                                     }
                                     break;
                                 case 05:  // SMA SNL
-                                    if (AC & 04000 || LK) {
+                                    if ((AC & 04000) || LK) {
                                         PC = (PC + 1) & 07777;
                                     }
                                     break;
                                 case 06:  // SMA SZA
-                                    if (AC & 04000 || AC == 0) {
+                                    if ((AC & 04000) || (AC == 0)) {
                                         PC = (PC + 1) & 07777;
                                     }
                                     break;
                                 case 07:  // SMA SZA SNL
-                                    if (AC & 04000 || AC == 0 || LK) {
+                                    if ((AC & 04000) || (AC == 0) || LK) {
                                         PC = (PC + 1) & 07777;
                                     }
                                     break;
@@ -358,7 +360,7 @@ int main() {
                                     }
                                     break;
                                 case 03:  // SNA SZL
-                                    if (AC && LK == 0) {
+                                    if (AC && (LK == 0)) {
                                         PC = (PC + 1) & 07777;
                                     }
                                     break;
@@ -369,17 +371,18 @@ int main() {
                                     }
                                     break;
                                 case 05:  // SPA SZL
-                                    if ((AC & 04000) == 0 && LK == 0) {
+                                    if (((AC & 04000) == 0) && LK == 0) {
                                         PC = (PC + 1) & 07777;
                                     }
                                     break;
                                 case 06:  // SPA SNA
-                                    if ((AC & 04000) == 0 && AC) {
+                                    if (((AC & 04000) == 0) && AC) {
                                         PC = (PC + 1) & 07777;
                                     }
                                     break;
                                 case 07:  // SPA SNA SZL
-                                    if ((AC & 04000) == 0 && AC && LK == 0) {
+                                    if (((AC & 04000) == 0) && AC &&
+                                        (LK == 0)) {
                                         PC = (PC + 1) & 07777;
                                     }
                                     break;
@@ -391,6 +394,7 @@ int main() {
                             break;
 
                         case 001:  // Group 3
+                            break;
                         case 011:
                             break;
                     }
