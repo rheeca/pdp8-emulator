@@ -78,6 +78,7 @@ int main() {
         page = (inst >> 7) & 00001;
 
         if (isDebug) {
+            printf("\n");
             printDebug();
             printDebugMicro();
         }
@@ -106,6 +107,10 @@ int main() {
                 PC = (PC + 1) & 07777;
                 if (I == INDIRECT) address = getIndirectAddress(address);
 
+                if (isDebug)
+                    printf("[M[%o] = %o; AC = %o + %o = %o] ", address,
+                           memory[address], AC, memory[address],
+                           AC + memory[address]);
                 AC = (AC | LK) + memory[address];
                 LK = AC & 010000;
                 AC = AC & 007777;
@@ -121,6 +126,10 @@ int main() {
                 PC = (PC + 1) & 07777;
                 if (I == INDIRECT) address = getIndirectAddress(address);
 
+                if (isDebug) {
+                    printf("[M[%o] = %o] ", address,
+                           ((memory[address] + 1) & 07777));
+                }
                 uint16 buf = memory[address] = ((memory[address] + 1) & 07777);
                 if (buf == 0) PC = (PC + 1) & 07777;
                 break;
@@ -150,6 +159,9 @@ int main() {
                 address = (address & 07777);
                 memory[address] = (PC + 1) & 07777;
                 PC = (address + 1) & 07777;
+                if (isDebug)
+                    printf("[addr: %o, ret PC: %o, new PC: %o] ", address,
+                           memory[address], PC);
                 break;
 
             case OP_JMP:
@@ -161,6 +173,8 @@ int main() {
                 if (I == INDIRECT) address = getIndirectAddress(address);
 
                 PC = address & 07777;
+
+                if (isDebug) printf("[new PC: %o] ", PC);
                 break;
 
             case OP_IO:  // Input/Output Transfer
@@ -186,8 +200,8 @@ int main() {
                                 break;
                             case 06:  // KRB
                                 keyboardFlag = 0;
-                                AC = keyboardBuffer;
                                 readCharacter();
+                                AC = keyboardBuffer;
                                 break;
                         }
                         break;
@@ -414,14 +428,16 @@ uint16 getIndirectAddress(uint16 address) {
     if ((address & 07770) == 00010) {  // address 010 to 017
         // autoindexed addressing
         if (isDebug)
-            printf("Autoindex: memory[%o] // %o\n", address, memory[address]);
+            printf("[autoindex: address = M[%o] + 1 = %o + 1] ", address,
+                   memory[address]);
         memory[address] = (memory[address] + 1) & 07777;
         address = memory[address];
     } else {
         // immediate addressing
         if (isDebug)
-            printf("Immediate: memory[%o] // %o\n", address, memory[address]);
-        address = (memory[address]);
+            printf("[immediate: address = M[%o] = %o] ", address,
+                   memory[address]);
+        address = (memory[address]) & 07777;
     }
     return address;
 }
@@ -474,135 +490,146 @@ void printDebug() {
             op = "OP_MICRO";
             break;
     }
-    printf("PC: %o, AC: %o, LK: %o; INST: %o (%s %c %c)\n", PC, AC, LK, inst,
+    printf("PC: %o, INST: %o, AC: %o, LK: %o; (%s %c %c) ", PC, inst, AC, LK,
            op, I_str, page_str);
 }
 
 void printDebugMicro() {
     if (inst >> 9 != OP_MICRO) return;
     if (I == 0) {  // Group 1
+        printf("Grp 1, ");
         // CLA CLL
         switch ((inst >> 6) & 00003) {
             case 01:  // CLL
-                printf("Group 1: CLL\n");
+                printf("CLL ");
                 break;
             case 02:  // CLA
-                printf("Group 1: CLA\n");
+                printf("CLA ");
                 break;
             case 03:  // CLA CLL
-                printf("Group 1: CLA CLL\n");
+                printf("CLA CLL ");
                 break;
         }
 
         // CMA CML
         switch ((inst >> 4) & 00003) {
             case 01:  // CML
-                printf("Group 1: CML\n");
+                printf("CML ");
                 break;
             case 02:  // CMA
-                printf("Group 1: CMA\n");
+                printf("CMA ");
                 break;
             case 03:  // CMA CML
-                printf("Group 1: CMA CML\n");
+                printf("CMA CML ");
                 break;
         }
 
         // IAC
         if (inst & 00001) {
-            printf("Group 1: IAC\n");
+            printf("IAC ");
         }
 
         // RAR RAL BSW
         switch ((inst >> 1) & 00007) {
             case 01:  // BSW
-                printf("Group 1: BSW\n");
+                printf("BSW ");
                 break;
             case 02:  // RAL
-                printf("Group 1: RAL\n");
+                printf("RAL ");
                 break;
             case 03:  // RTL (RAL BSW)
-                printf("Group 1: RTL (RAL BSW)\n");
+                printf("RTL (RAL BSW) ");
                 break;
             case 04:  // RAR
-                printf("Group 1: RAR\n");
+                printf("RAR ");
                 break;
             case 05:  // RTR (RAR BSW)
-                printf("Group 1: RTR (RAR BSW)\n");
+                printf("RTR (RAR BSW) ");
                 break;
             case 06:  // RAR RAL
-                printf("Group 1: RAR RAL\n");
+                printf("RAR RAL ");
                 break;
             case 07:  // RAR RAL BSW
-                printf("Group 1: RAR RAL BSW\n");
+                printf("RAR RAL BSW ");
                 break;
         }
     } else {
         switch (inst & 00011) {
+            printf("Grp 2, or: ");
             case 000:  // Group 2, Or group
                 // SMA SZA SNL
                 switch ((inst >> 4) & 00007) {
+                    case 00:
+                        printf("NOP ");
+                        break;
                     case 01:  // SNL
-                        printf("Group 2 Or: SNL\n");
+                        printf("SNL ");
                         break;
                     case 02:  // SZA
-                        printf("Group 2 Or: SZA\n");
+                        printf("SZA ");
                         break;
                     case 03:  // SZA SNL
-                        printf("Group 2 Or: SZA SNL\n");
+                        printf("SZA SNL ");
                         break;
                     case 04:  // SMA
                         // If negative (sign bit is 1)
-                        printf("Group 2 Or: SMA\n");
+                        printf("SMA ");
                         break;
                     case 05:  // SMA SNL
-                        printf("Group 2 Or: SMA SNL\n");
+                        printf("SMA SNL ");
                         break;
                     case 06:  // SMA SZA
-                        printf("Group 2 Or: SMA SZA\n");
+                        printf("SMA SZA ");
                         break;
                     case 07:  // SMA SZA SNL
-                        printf("Group 2 Or: SMA SZA SNL\n");
+                        printf("SMA SZA SNL ");
                         break;
                 }
 
                 // CLA
-                if ((inst >> 7) & 00001) printf("Group 2 Or: CLA\n");
+                if ((inst >> 7) & 00001) printf("CLA ");
 
                 break;
 
             case 010:  // Group 2, And group
+                printf("Grp 2, and: ");
                 // SPA SNA SZL
                 switch ((inst >> 4) & 00007) {
+                    case 00:
+                        printf("unconditional skp ");
+                        break;
                     case 01:  // SZL
-                        printf("Group 2 And: SZL\n");
+                        printf("SZL ");
                         break;
                     case 02:  // SNA
-                        printf("Group 2 And: SNA\n");
+                        printf("SNA ");
                         break;
                     case 03:  // SNA SZL
-                        printf("Group 2 And: SNA SZL\n");
+                        printf("SNA SZL ");
                         break;
                     case 04:  // SPA
                         // If positive (sign bit is 0)
-                        printf("Group 2 And: SPA\n");
+                        printf("SPA ");
                         break;
                     case 05:  // SPA SZL
-                        printf("Group 2 And: SPA SZL\n");
+                        printf("SPA SZL ");
                         break;
                     case 06:  // SPA SNA
-                        printf("Group 2 And: SPA SNA\n");
+                        printf("SPA SNA ");
                         break;
                     case 07:  // SPA SNA SZL
-                        printf("Group 2 And: SPA SNA SZL\n");
+                        printf("SPA SNA SZL ");
                         break;
                 }
 
                 // CLA
-                if ((inst >> 7) & 00001) printf("Group 2 And: CLA\n");
+                if ((inst >> 7) & 00001) printf("CLA ");
 
                 break;
 
             case 001:  // Group 3
+                printf("Grp 3 ");
+                break;
             case 011:
                 break;
         }
