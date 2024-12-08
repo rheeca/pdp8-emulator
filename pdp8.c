@@ -94,6 +94,10 @@ int main() {
 
                 PC = (PC + 1) & 07777;
                 if (I == INDIRECT) address = getIndirectAddress(address);
+
+                if (isDebug)
+                    printf("[AC = AC & M[%o] = %o & %o = %o] ", address, AC,
+                           memory[address], (AC & memory[address]));
                 AC = AC & memory[address];
                 break;
 
@@ -108,9 +112,9 @@ int main() {
                 if (I == INDIRECT) address = getIndirectAddress(address);
 
                 if (isDebug)
-                    printf("[M[%o] = %o; AC = %o + %o = %o] ", address,
-                           memory[address], AC, memory[address],
-                           AC + memory[address]);
+                    printf("[L|AC = L|AC + M[%o] = %o + %o = %o] ", address,
+                           (LK | AC), memory[address],
+                           ((AC | LK) + memory[address]));
                 AC = (AC | LK) + memory[address];
                 LK = AC & 010000;
                 AC = AC & 007777;
@@ -127,7 +131,8 @@ int main() {
                 if (I == INDIRECT) address = getIndirectAddress(address);
 
                 if (isDebug) {
-                    printf("[M[%o] = %o] ", address,
+                    printf("[M[%o] = M[%o] + 1 = %o + 1 = %o] ", address,
+                           address, memory[address],
                            ((memory[address] + 1) & 07777));
                 }
                 uint16 buf = memory[address] = ((memory[address] + 1) & 07777);
@@ -144,6 +149,7 @@ int main() {
                 PC = (PC + 1) & 07777;
                 if (I == INDIRECT) address = getIndirectAddress(address);
 
+                if (isDebug) printf("[M[%o] = AC = %o; AC = 0] ", address, AC);
                 memory[address] = AC;
                 AC = 0;
                 break;
@@ -156,12 +162,12 @@ int main() {
                     address = getAddrPageZero(inst);
                 if (I == INDIRECT) address = getIndirectAddress(address);
 
+                if (isDebug)
+                    printf("[M[%o] = returnPC = %o; new PC = %o] ", address,
+                           ((PC + 1) & 07777), ((address + 1) & 07777));
                 address = (address & 07777);
                 memory[address] = (PC + 1) & 07777;
                 PC = (address + 1) & 07777;
-                if (isDebug)
-                    printf("[addr: %o, ret PC: %o, new PC: %o] ", address,
-                           memory[address], PC);
                 break;
 
             case OP_JMP:
@@ -172,9 +178,8 @@ int main() {
                     address = getAddrPageZero(inst);
                 if (I == INDIRECT) address = getIndirectAddress(address);
 
+                if (isDebug) printf("[new PC = %o] ", (address & 07777));
                 PC = address & 07777;
-
-                if (isDebug) printf("[new PC: %o] ", PC);
                 break;
 
             case OP_IO:  // Input/Output Transfer
@@ -488,6 +493,8 @@ void printDebug() {
             break;
         case OP_MICRO:
             op = "OP_MICRO";
+            I_str = '-';
+            page_str = '-';
             break;
     }
     printf("PC: %o, INST: %o, AC: %o, LK: %o; (%s %c %c) ", PC, inst, AC, LK,
