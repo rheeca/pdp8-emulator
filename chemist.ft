@@ -22,8 +22,8 @@
 17      FORMAT(' ')
 
 20      INTEGER SEED, A, C, M, ACID
-        INTEGER W, R, D, T
-        REAL RANDOM
+        INTEGER R, T
+        REAL RANDOM, F, W, D
 
         T = 0
 
@@ -39,12 +39,14 @@
         W = 7*ACID/3
 
         WRITE(4,22) ACID
-22      FORMAT(I2, ' LITERS OF KRYPTOCYANIC ACID. HOW MUCH WATER')
+22      FORMAT(I4, ' LITERS OF KRYPTOCYANIC ACID. HOW MUCH WATER')
 
         READ(4, 23) R
 23      FORMAT(I3)
         D = ABS(W-R)
-        IF (D .GT. W / 20) GOTO 200
+        F = W / 20
+
+        IF (D .GT. F) GOTO 200
         WRITE(4, 24)
 24      FORMAT(' GOOD JOB!')
         WRITE(4, 25)
