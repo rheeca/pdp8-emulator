@@ -1,0 +1,89 @@
+make "words [GUM SIN FOR CRY LUG BYE FLY
+             UGLY EACH FROM WORK TALK WITH SELF]
+make "used []
+
+make "word "
+make "letters []
+make "lettersRevealed []
+make "lettersUsed []
+make "lives 10
+
+
+to gameLoop 
+    print [HERE ARE THE LETTERS YOU USED:]
+    print :lettersUsed
+    print "
+    print :lettersRevealed
+    print "
+
+    print [WHAT IS YOUR GUESS? ]
+    make "input readword
+    print "
+
+    if (member? :input :lettersUsed) [
+        print [YOU GUESSED THAT LETTER BEFORE!]
+        stop
+    ]
+    make "lettersUsed lput :input :lettersUsed
+
+    make "found 0
+    repeat count :letters [
+        if (item repcount :letters) = :input [
+            setitem repcount :lettersRevealed :input
+            make "found 1
+        ]
+    ]
+
+    if :found = 0 [
+        print [WRONG.  TRY ANOTHER LETTER.]
+        make "lives :lives - 1
+        stop
+    ]
+end
+
+to hangman
+    print "
+    print [HANGMAN]
+    print [CREATIVE COMPUTING  MORRISTOWN, NEW JERSEY]
+    print "
+    print "
+    print "
+
+    forever [
+        if (count :used) >= (count :words) [
+            print [YOU DID ALL THE WORDS!!]
+            stop
+        ]
+
+        make "letters []
+        make "lettersRevealed []
+        make "lettersUsed []
+        make "lives 10
+
+        make "randomI (random count :words) + 1
+        make "word item :randomI :words
+        while [member? :word :used] [
+            make "randomI (random count :words) + 1
+            make "word item :randomI :words
+        ]
+        make "used lput :word :used
+
+        repeat count :word [
+            make "letters sentence :letters (item repcount :word)
+        ]
+
+        repeat count :letters [
+            make "lettersRevealed lput "- :lettersRevealed
+        ]
+
+        make "lettersRevealed listtoarray :lettersRevealed
+
+        while [lives > 0] [
+            gameLoop
+        ]
+
+        print sentence [SORRY, YOU LOSE.  THE WORD WAS ] :word
+    ]
+end
+
+hangman
