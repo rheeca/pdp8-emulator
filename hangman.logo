@@ -177,51 +177,74 @@ to drawPicture
     ]
 end
 
-to guessWord 
-    print [HERE ARE THE LETTERS YOU USED:]
-    print :lettersUsed
-    print "
-    print :lettersRevealed
-    print "
-
-    print [WHAT IS YOUR GUESS? ]
-    make "input readword
-    print "
-    while [member? :input :lettersUsed] [
-        print [YOU GUESSED THAT LETTER BEFORE!]
+to guessLetter
+    forever [
+        print [HERE ARE THE LETTERS YOU USED:]
+        print :lettersUsed
         print "
+        print :lettersRevealed
+        print "
+
         print [WHAT IS YOUR GUESS? ]
         make "input readword
         print "
-    ]
-    make "lettersUsed lput :input :lettersUsed
+        while [member? :input :lettersUsed] [
+            print [YOU GUESSED THAT LETTER BEFORE!]
+            print "
+            print [WHAT IS YOUR GUESS? ]
+            make "input readword
+            print "
+        ]
+        make "lettersUsed lput :input :lettersUsed
 
-    make "found 0
-    repeat count :letters [
-        if (item repcount :letters) = :input [
-            setitem repcount :lettersRevealed :input
-            make "found 1
+        make "found 0
+        repeat count :letters [
+            if (item repcount :letters) = :input [
+                setitem repcount :lettersRevealed :input
+                make "found 1
+            ]
+        ]
+
+        if :found = 0 [
+            print [SORRY, THAT LETTER ISN'T IN THE WORD.]
+            make "lives :lives - 1
+            drawPicture
+            if :lives <= 0 [
+                output 0
+            ]
+        ]
+
+        if :found = 1 [
+            print :lettersRevealed
+            print "
+            print [WHAT IS YOUR GUESS FOR THE WORD]
+            make "input readword
+
+            if :input = :word [
+                output 1
+            ]
+
+            print [WRONG.  TRY ANOTHER LETTER.]
+            print "
         ]
     ]
+end
 
-    if :found = 0 [
-        print [SORRY, THAT LETTER ISN'T IN THE WORD.]
-        make "lives :lives - 1
-        drawPicture
+to guessWord 
+    make "result guessLetter
+
+    if :result = 1 [
+        make "num 10 - :lives
+        print sentence [RIGHT!!  IT TOOK YOU ] :num [GUESSES!]
+        print "
         stop
     ]
 
-    print :lettersRevealed
-    print "
-    print [WHAT IS YOUR GUESS FOR THE WORD]
-    make "input readword
-
-    if :input = :word [
-        make "num 10 - :lives
-        print sentence [RIGHT!!  IT TOOK YOU ] :num [GUESSES!]
-        print [WANT ANOTHER WORD]
-        make "input readword
-
+    if :result = 0 [
+        print sentence [SORRY, YOU LOSE.  THE WORD WAS ] :word
+        print [YOU MISSED THAT ONE]
+        print "
+        stop
     ]
 end
 
@@ -262,12 +285,16 @@ to hangman
 
         make "lettersRevealed listtoarray :lettersRevealed
 
-        while [lives > 0] [
-            guessWord
-        ]
+        guessWord
 
-        print sentence [SORRY, YOU LOSE.  THE WORD WAS ] :word
+        print [DO YOU WANT ANOTHER WORD?]
         print "
+        make "input readword
+        if not equalp :input "Y [
+            print [IT'S BEEN FUN!  BYE FOR NOW.]
+            print "
+            stop
+        ]
     ]
 end
 
