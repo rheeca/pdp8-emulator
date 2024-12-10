@@ -177,29 +177,22 @@ to drawPicture
     ]
 end
 
-to readLetter
-    print [WHAT IS YOUR GUESS? ]
-    make "input readword
-    print "
-
-    if (member? :input :lettersUsed) [
-        print [YOU GUESSED THAT LETTER BEFORE!]
-        output 0
-    ]
-
-    output 1
-end
-
-to gameLoop 
+to guessWord 
     print [HERE ARE THE LETTERS YOU USED:]
     print :lettersUsed
     print "
     print :lettersRevealed
     print "
 
-    make "found 0
-    while [:found = 0] [
-        make "found readLetter
+    print [WHAT IS YOUR GUESS? ]
+    make "input readword
+    print "
+    while [member? :input :lettersUsed] [
+        print [YOU GUESSED THAT LETTER BEFORE!]
+        print "
+        print [WHAT IS YOUR GUESS? ]
+        make "input readword
+        print "
     ]
     make "lettersUsed lput :input :lettersUsed
 
@@ -270,7 +263,7 @@ to hangman
         make "lettersRevealed listtoarray :lettersRevealed
 
         while [lives > 0] [
-            gameLoop
+            guessWord
         ]
 
         print sentence [SORRY, YOU LOSE.  THE WORD WAS ] :word
