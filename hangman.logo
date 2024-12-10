@@ -1,5 +1,12 @@
 make "words [GUM SIN FOR CRY LUG BYE FLY
-             UGLY EACH FROM WORK TALK WITH SELF]
+             UGLY EACH FROM WORK TALK WITH SELF
+             PIZZA THING FEIGN FIEND ELBOW FAULT DIRTY
+             BUDGET SPIRIT QUAINT MAIDEN ESCORT PICKAX
+             EXAMPLE TENSION QUININE KIDNEY REPLICA SLEEPER
+             TRIANGLE KANGAROO MAHOGANY SERGEANT SEQUENCE
+             MOUSTACHE DANGEROUS SCIENTIST DIFFERENT QUIESCENT
+             MAGISTRATE ERRONEOUSLY LOUDSPEAKER PHYTOTOXIC
+             MATRIMONIAL PARASYMPATHOMIMETIC THIGMOTROPISM]
 make "used []
 
 make "word "
@@ -9,6 +16,180 @@ make "lettersUsed []
 make "lives 10
 
 
+to drawPicture
+    if :lives = 9 [
+        print [.............]
+        print [.............]
+        print [.....---.....]
+        print [....(".")....]
+        print [.....---.....]
+        print [.............]
+        print [.............]
+        print [.............]
+        print [.............]
+        print [.............]
+        print [.............]
+        print [.............]
+    ]
+
+    if :lives = 8 [
+        print [NOW WE DRAW A BODY.]
+        print [.............]
+        print [.............]
+        print [.....---.....]
+        print [....(".")....]
+        print [.....---.....]
+        print [......X......]
+        print [......X......]
+        print [......X......]
+        print [......X......]
+        print [.............]
+        print [.............]
+        print [.............]
+    ]
+
+    if :lives = 7 [
+        print [NEXT WE DRAW AN ARM.]
+        print [.............]
+        print [.............]
+        print [.....---.....]
+        print [..\\.(".")....]
+        print [...\\.---.....]
+        print [....\\.X......]
+        print [.....\\X......]
+        print [......X......]
+        print [......X......]
+        print [.............]
+        print [.............]
+        print [.............]
+    ]
+
+    if :lives = 6 [
+        print [THIS TIME IT'S THE OTHER ARM.]
+        print [.............]
+        print [.............]
+        print [.....---.....]
+        print [..\\.(".")./..]
+        print [...\\.---./...]
+        print [....\\.X./....]
+        print [.....\\X/.....]
+        print [......X......]
+        print [......X......]
+        print [.............]
+        print [.............]
+        print [.............]
+    ]
+
+    if :lives = 5 [
+        print [NOW, LET'S DRAW THE RIGHT LEG.]
+        print [.............]
+        print [.............]
+        print [.....---.....]
+        print [..\\.(".")./..]
+        print [...\\.---./...]
+        print [....\\.X./....]
+        print [.....\\X/.....]
+        print [......X......]
+        print [......X......]
+        print [...../.......]
+        print [..../........]
+        print [.............]
+    ]
+
+    if :lives = 4 [
+        print [THIS TIME WE DRAW THE LEFT LEG.]
+        print [.............]
+        print [.............]
+        print [.....---.....]
+        print [..\\.(".")./..]
+        print [...\\.---./...]
+        print [....\\.X./....]
+        print [.....\\X/.....]
+        print [......X......]
+        print [......X......]
+        print [...../.\\.....]
+        print [..../...\\....]
+        print [.............]
+    ]
+
+    if :lives = 3 [
+        print [NOW WE PUT UP A HAND.]
+        print [.............]
+        print [.............]
+        print [.....---..\\..]
+        print [..\\.(".")./..]
+        print [...\\.---./...]
+        print [....\\.X./....]
+        print [.....\\X/.....]
+        print [......X......]
+        print [......X......]
+        print [...../.\\.....]
+        print [..../...\\....]
+        print [.............]
+    ]
+
+    if :lives = 2 [
+        print [NEXT THE OTHER HAND.]
+        print [.............]
+        print [.............]
+        print [../..---..\\..]
+        print [..\\.(".")./..]
+        print [...\\.---./...]
+        print [....\\.X./....]
+        print [.....\\X/.....]
+        print [......X......]
+        print [......X......]
+        print [...../.\\.....]
+        print [..../...\\....]
+        print [.............]
+    ]
+
+    if :lives = 1 [
+        print [NOW WE DRAW ONE FOOT]
+        print [.............]
+        print [.............]
+        print [../..---..\\..]
+        print [..\\.(".")./..]
+        print [...\\.---./...]
+        print [....\\.X./....]
+        print [.....\\X/.....]
+        print [......X......]
+        print [......X......]
+        print [...../.\\.....]
+        print [..../...\\-...]
+        print [.............]
+    ]
+
+    if :lives = 0 [
+        print [HERE'S THE OTHER FOOT! YOU'RE OUT OF LIVES!]
+        print [.............]
+        print [.............]
+        print [../..---..\\..]
+        print [..\\.(".")./..]
+        print [...\\.---./...]
+        print [....\\.X./....]
+        print [.....\\X/.....]
+        print [......X......]
+        print [......X......]
+        print [...../.\\.....]
+        print [...-/...\\-...]
+        print [.............]
+    ]
+end
+
+to readLetter
+    print [WHAT IS YOUR GUESS? ]
+    make "input readword
+    print "
+
+    if (member? :input :lettersUsed) [
+        print [YOU GUESSED THAT LETTER BEFORE!]
+        output 0
+    ]
+
+    output 1
+end
+
 to gameLoop 
     print [HERE ARE THE LETTERS YOU USED:]
     print :lettersUsed
@@ -16,13 +197,9 @@ to gameLoop
     print :lettersRevealed
     print "
 
-    print [WHAT IS YOUR GUESS? ]
-    make "input readword
-    print "
-
-    if (member? :input :lettersUsed) [
-        print [YOU GUESSED THAT LETTER BEFORE!]
-        stop
+    make "found 0
+    while [:found = 0] [
+        make "found readLetter
     ]
     make "lettersUsed lput :input :lettersUsed
 
@@ -35,9 +212,23 @@ to gameLoop
     ]
 
     if :found = 0 [
-        print [WRONG.  TRY ANOTHER LETTER.]
+        print [SORRY, THAT LETTER ISN'T IN THE WORD.]
         make "lives :lives - 1
+        drawPicture
         stop
+    ]
+
+    print :lettersRevealed
+    print "
+    print [WHAT IS YOUR GUESS FOR THE WORD]
+    make "input readword
+
+    if :input = :word [
+        make "num 10 - :lives
+        print sentence [RIGHT!!  IT TOOK YOU ] :num [GUESSES!]
+        print [WANT ANOTHER WORD]
+        make "input readword
+
     ]
 end
 
@@ -83,6 +274,7 @@ to hangman
         ]
 
         print sentence [SORRY, YOU LOSE.  THE WORD WAS ] :word
+        print "
     ]
 end
 
