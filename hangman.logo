@@ -235,7 +235,8 @@ to guessWord
 
     if :result = 1 [
         make "num 10 - :lives
-        print sentence [RIGHT!!  IT TOOK YOU ] :num [GUESSES!]
+        make "victory sentence [RIGHT!!  IT TOOK YOU] :num
+        print sentence victory [GUESSES!]
         print "
         stop
     ]
