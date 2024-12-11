@@ -1,4 +1,7 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <sys/ioctl.h>
+#include <termios.h>
 
 #define MEMSIZE 32768  // 15-bit addresses-able memory
 
@@ -50,6 +53,10 @@ void printCharacter();
 void printDebug();
 void printDebugMicro();
 
+struct termios termios_old;
+
+void reset_termios() { tcsetattr(0, TCSANOW, &termios_old); }
+
 int main() {
     FILE *interpreterFile;
     interpreterFile = fopen("focal.dump.nointerrupts.raw", "r");
@@ -66,6 +73,11 @@ int main() {
         memory[i] = word;
         i++;
     }
+    struct termios tios = termios_old;
+    tcgetattr(0, &termios_old);
+    atexit(reset_termios);
+    cfmakeraw(&tios);
+    tcsetattr(0, TCSANOW, &tios);
 
     PC = 0200;  // start at address 0200 (skip page 0)
     while (1) {

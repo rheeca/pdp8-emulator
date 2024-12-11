@@ -18,6 +18,7 @@ make "lives 10
 
 to drawPicture
     if :lives = 9 [
+        print [FIRST, WE DRAW A HEAD.]
         print [.............]
         print [.............]
         print [.....---.....]
